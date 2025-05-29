@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>연락처 상세</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="edit-container">
+  <form class="edit-form" onsubmit="return false;">
+    
+    <!-- ✅ 상단 버튼 영역 (뒤로가기 / 삭제 / 수정) -->
+    <div class="button-group">
+      <div class="left-buttons">
+        <button type="button" class="back-btn">
+          <img src="img/back.png" alt="뒤로 가기" />
+        </button>
+      </div>
+      <div class="right-buttons">
+        <button type="button" class="delete-btn">
+          <img src="img/delet.png" alt="삭제" />
+        </button>
+        <button type="button" class="edit-btn">
+          <img src="img/edit.png" alt="수정" />
+        </button>
+      </div>
+    </div>
+
+    <!-- ✅ 프로필 이미지 표시 -->
+    <div class="photo-section">
+      <img src="img/person1.png" alt="프로필 이미지" class="profile-img" />
+    </div>
+
+    <!-- ✅ 연락처 기본 정보 (이름, 전화번호, 이메일) -->
+    <label for="name">👤이름</label>
+    <input type="text" id="name" name="name" disabled />
+
+    <label for="phone">📞전화번호</label>
+    <input type="tel" id="phone" name="phone" disabled />
+
+    <label for="email">📩이메일</label>
+    <input type="email" id="email" name="email" disabled />
+
+    <!-- ✅ 추가 정보 영역 (태그, 수정일, 즐겨찾기 여부) -->
+    <div class="extra-info">
+      <span class="contact-tag"></span>
+      <span class="contact-updated"></span>
+      <span class="contact-favorite"></span>
+    </div>
+  </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // ✅ URL에서 edit 파라미터 추출
+  const editIndex = parseInt(new URLSearchParams(window.location.search).get('edit'), 10);
+  let contacts = [];
+
+  // ✅ 서버에서 연락처 데이터 로드
+  fetch('/api/contacts')
+    .then(res => res.json())
+    .then(data => {
+      contacts = data;
+
+      // ✅ 유효한 index일 경우 해당 연락처 정보 표시
+      if (!isNaN(editIndex) && contacts.length > editIndex) {
+        const contact = contacts[editIndex];
+        document.querySelector('#name').value = contact.name || '';
+        document.querySelector('#phone').value = contact.phone || '';
+        document.querySelector('#email').value = contact.email || '';
+        document.querySelector('.contact-tag').innerHTML =  `<p>📌 분류: ${contact.tag || '기타'}</p>`;
+        document.querySelector('.contact-updated').innerHTML = `⏱️ 마지막 수정일: ${new Date(contact.lastUpdated).toLocaleString()}`;
+        document.querySelector('.contact-favorite').textContent = contact.favorite ? '★ 즐겨찾기' : '';
+        if (contact.image) {
+          document.querySelector('.profile-img').src = contact.image;
+        }
+      }
+    })
+    .catch(err => {
+      console.error('연락처 불러오기 실패:', err);
+      alert('연락처 데이터를 불러오는 데 실패했습니다.');
+    });
+
+  // ✅ 뒤로가기 버튼 동작
+  document.querySelector('.back-btn').addEventListener('click', () => {
+    window.location.href = 'index.html';
+  });
+
+  // ✅ 삭제 버튼 동작
+  document.querySelector('.delete-btn').addEventListener('click', () => {
+    if (confirm('정말 삭제하시겠습니까?')) {
+      fetch(`/api/contacts/${editIndex}`, {
+        method: 'DELETE'
+      })
+        .then(() => {
+          alert('삭제되었습니다.');
+          window.location.href = 'index.html';
+        })
+        .catch(err => {
+          alert('삭제 실패: ' + err.message);
+        });
+    }
+  });
+
+  // ✅ 수정 버튼 클릭 시 편집 페이지로 이동
+  document.querySelector('.edit-btn').addEventListener('click', () => {
+    window.location.href = `sub.html?edit=${editIndex}`;
+  });
+});
+</script>
+</body>
+</html>

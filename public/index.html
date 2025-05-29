@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>연락처 목록</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="edit-container">
+    <!-- ✅ 상단 타이틀 및 추가 버튼 -->
+    <div class="top-bar">
+      <h1 id="list">연락처 목록</h1>
+      <button type="button" class="plus-btn">
+        <img src="img/plus.png" alt="추가" />
+      </button>
+    </div>
+
+    <!-- ✅ 검색창 + 태그 필터 선택 -->
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="🔍이름 또는 전화번호" />
+      <select id="tagFilter">
+        <option value="">📂 전체</option>
+        <option value="가족">👨‍👩‍👧 가족</option>
+        <option value="친구">👫 친구</option>
+        <option value="회사">🏢 회사</option>
+      </select>
+    </div>
+
+    <!-- ✅ 연락처 목록 출력 영역 -->
+    <div id="contact-list"></div>
+  </div>
+
+  <script>
+    // ✅ 추가 버튼 클릭 시 편집 페이지로 이동
+    document.querySelector('.plus-btn').addEventListener('click', () => {
+      window.location.href = 'sub.html';
+    });
+
+    // ✅ DOM 요소 참조
+    const contactList = document.getElementById('contact-list');
+    const searchInput = document.getElementById('searchInput');
+    const tagFilter = document.getElementById('tagFilter');
+    let contacts = [];
+
+    // ✅ 연락처 렌더링 함수
+    function renderContacts(data) {
+      contactList.innerHTML = '';
+
+      if (data.length === 0) {
+        contactList.innerHTML = '<p>해당 조건에 맞는 연락처가 없습니다.</p>';
+        return;
+      }
+
+      data.forEach((contact, index) => {
+        const item = document.createElement('div');
+        item.className = 'contact-item';
+        item.innerHTML = `
+          <div class="contact-info">
+            <img src="${contact.image || 'img/person1.png'}" class="small-profile-img" data-index="${index}" />
+            <div class="contact-text">
+              <p class="contact-tag"># ${contact.tag || '기타'}</p>
+              <p class="contact-name">이름: ${contact.name}</p>
+              <p class="contact-phone">전화번호: ${contact.phone}</p>
+              <p class="contact-email">이메일: ${contact.email}</p>
+            </div>
+          </div>`;
+        contactList.appendChild(item);
+      });
+
+      // ✅ 프로필 클릭 시 상세 페이지로 이동
+      document.querySelectorAll('.small-profile-img').forEach(img => {
+        img.addEventListener('click', (event) => {
+          const index = event.target.dataset.index;
+          window.location.href = `main.html?edit=${index}`;
+        });
+      });
+    }
+
+    // ✅ 검색어와 태그 필터 적용 함수
+    function applyFilters() {
+      const keyword = searchInput.value.trim().toLowerCase();
+      const selectedTag = tagFilter.value;
+
+      const filtered = contacts.filter(c =>
+        (c.name?.toLowerCase().includes(keyword) || c.phone?.includes(keyword)) &&
+        (!selectedTag || c.tag === selectedTag)
+      );
+
+      renderContacts(filtered);
+    }
+
+    // ✅ 서버에서 연락처 목록 불러오기
+    fetch('/api/contacts')
+      .then(res => res.json())
+      .then(data => {
+        contacts = data;
+        contacts.sort((a, b) => (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0)); // 즐겨찾기 우선 정렬
+        renderContacts(contacts);
+      })
+      .catch(err => {
+        contactList.innerHTML = '<p>서버에서 연락처를 불러오는 중 오류가 발생했습니다.</p>';
+        console.error(err);
+      });
+
+    // ✅ 검색어 & 태그 필터 이벤트 핸들링
+    searchInput.addEventListener('input', applyFilters);
+    tagFilter.addEventListener('change', applyFilters);
+  </script>
+</body>
+</html>
